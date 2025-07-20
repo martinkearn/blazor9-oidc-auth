@@ -131,3 +131,5 @@ app.MapGet("/signout", async ctx =>
     </NotAuthorized>
 </AuthorizeView>
 ```
+
+1. Allthough the client project is not yet configured. You should be able to run the app (`dotnet run`) and sign-in on the server pages. On first sign in, you will need to "Let this app access your info". If sucessfully, the home page of your app will show all the claims.
