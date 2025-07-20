@@ -5,3 +5,21 @@
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+@using Microsoft.AspNetCore.Components.Authorization
+<AuthorizeView>
+    <Authorized>
+        <p>Hello, @context.User.Claims.AsQueryable().Single(c => c.Type == "name").Value!</p>
+        <p>The claims are:</p>
+        <ul>
+            @foreach(var c in context.User.Claims)
+            {
+                <li>@c.Type: @c.Value</li>
+            }
+        </ul>
+        <a href="/signout">Logout</a>
+    </Authorized>
+    <NotAuthorized>
+        <a href="/signin">Login</a>
+    </NotAuthorized>
+</AuthorizeView>
