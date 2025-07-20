@@ -21,3 +21,81 @@ You don’t need full Azure AD or enterprise setup—just register your app in t
 - `-au None` ensure no templated authentication components. We will set this up manually. OIDC and other auth options are not offered, only "Individual authentication" which uses a local database.
 - `-n Blazor9OIDC` just sets the name of the project
 
+## Blazor Server project setup
+1. On the server project (Blazor9OIDC) `dotnet add package Microsoft.AspNetCore.Authentication.OpenIdConnect`
+1. In appsettings.Development.json, add this section beneath "Logging". Update YOUR_CLIENT_ID and YOUR_CLIENT_SECRET:
+
+```
+"Authentication": {
+    "Schemes": {
+      "OpenIdConnect": {
+        "Authority": "https://login.microsoftonline.com/consumers/v2.0",
+        "ClientId": "YOUR_CLIENT_ID",
+        "ClientSecret": "YOUR_CLIENT_SECRET",
+        "CallbackPath": "/signin-oidc",
+        "SignedOutCallbackPath": "/signout-callback-oidc",
+        "ResponseType": "code",
+        "SaveTokens": true,
+        "Scope": [ "openid", "profile", "email" ]
+      }
+    }
+  }
+```
+ 
+1. In Program.cs add this at the top of the file:
+
+```
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+```
+
+1. In Program.cs, update `builder.Services.AddRazorComponents` to be as follows:
+
+```
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddInteractiveWebAssemblyComponents()
+    .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
+```
+
+
+1. In Program.cs add this after `builder.Services.AddRazorComponents();`
+
+ ```
+builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme,
+    builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect"));
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    })
+    .AddCookie()
+    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, _ => { }); // Leave empty, options are configured above
+builder.Services.AddAuthorization();
+ ```
+
+1. In Program.cs add this after `var app = builder.Build();`
+
+```
+app.UseAuthentication();
+app.UseAuthorization();
+```
+
+1. in program.cs, add this before `app.Run()`:
+
+```
+app.MapGet("/signin", async ctx =>
+{
+    await ctx.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, new AuthenticationProperties
+    {
+        RedirectUri = "/"
+    });
+});
+
+app.MapGet("/signout", async ctx =>
+{
+    await ctx.SignOutAsync();
+    ctx.Response.Redirect("/");
+});
+```
