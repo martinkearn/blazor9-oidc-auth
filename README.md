@@ -22,7 +22,9 @@ You don’t need full Azure AD or enterprise setup—just register your app in t
 - `-n Blazor9OIDC` just sets the name of the project
 
 ## Blazor Server project setup
-1. On the server project (Blazor9OIDC) `dotnet add package Microsoft.AspNetCore.Authentication.OpenIdConnect`
+On the server project (Blazor9OIDC).
+
+1. `dotnet add package Microsoft.AspNetCore.Authentication.OpenIdConnect`
 1. In appsettings.Development.json, add this section beneath "Logging". Update YOUR_CLIENT_ID and YOUR_CLIENT_SECRET:
 
 ```
@@ -133,3 +135,42 @@ app.MapGet("/signout", async ctx =>
 ```
 
 1. Allthough the client project is not yet configured. You should be able to run the app (`dotnet run`) and sign-in on the server pages. On first sign in, you will need to "Let this app access your info". If sucessfully, the home page of your app will show all the claims.
+
+## Blazor client project setup
+On the server project (Blazor9OIDC.CLient).
+
+1. `dotnet add package Microsoft.AspNetCore.Components.WebAssembly.Authentication`
+1. In Program.cs (the client project version), add this directly after `var builder = WebAssemblyHostBuilder.CreateDefault(args);`:
+
+```
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthenticationStateDeserialization();
+```
+
+1. In _imports.razor, add the line to the bottom of the file: `@using Microsoft.AspNetCore.Components.Authorization`
+
+1. In Pages > Counter.razor, replace "@rendermode InteractiveAuto" `@rendermode InteractiveWebAssembly`. This forces the page to run on the client/Web Assembly
+
+1. In Pages > Counter.razor, add this code. The Render mode part os not required but usefull to see that the page is running on Web Assembly:
+
+```
+<p>Render Mode: @(RendererInfo.IsInteractive ? "Interactive" : "Not Interactive") (@RendererInfo.Name)</p>
+
+<AuthorizeView>
+    <Authorized>
+        <p>Hello, @context.User.Claims.AsQueryable().Single(c => c.Type == "name").Value!</p>
+        <p>The claims are:</p>
+        <ul>
+            @foreach(var c in context.User.Claims)
+            {
+                <li>@c.Type: @c.Value</li>
+            }
+        </ul>
+        <a href="/signout">Logout</a>
+    </Authorized>
+    <NotAuthorized>
+        <a href="/signin">Login</a>
+    </NotAuthorized>
+</AuthorizeView>
+```
