@@ -174,3 +174,5 @@ builder.Services.AddAuthenticationStateDeserialization();
     </NotAuthorized>
 </AuthorizeView>
 ```
+
+1. Run the server app, login as you did before and navigate to the Counter page. You will see the same claims. Also note "Interactive (WebAssembly)" which proves it is running on the client
