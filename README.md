@@ -184,7 +184,8 @@ builder.Services.AddAuthenticationStateDeserialization();
 
 1. Run the server app (server, not client), login as you did before and navigate to the Counter page. You will see the same claims. Also note "Interactive (WebAssembly)" which proves it is running on the client.
 
-## Add and call a secure API
+## Add a basic API
+In this step, we'll add a basic API, without security initially, to the server project. This API will later be secured with OIDC.
 
 1. In the server project, add a new API controller via "Scaffolded item" > `API Controller - Empty`. Name it `SecureApiController.cs`.
 1. In the new controller, add this code:
@@ -200,6 +201,7 @@ public IActionResult Get()
 
 ```
 builder.Services.AddControllers(); 
+builder.Services.AddHttpClient();
 ```
 
 1. In Program.cs in the server project, add this after `app.UseAuthorization();`:
@@ -209,3 +211,38 @@ app.MapControllers();
 ```
 
 1. Run the Server project and execute the following command in a terminal: `curl -i http://localhost:5296/api/secureapi`. You should receive a `HTTP/1.1 200 OK` response with the message "You are authorized to access this secure API endpoint". This proves that your API is running, but it is not yet secured.
+
+## Call the Api from the client project
+In this step, we'll call the API from the client project and display the result.
+
+1. In Program.cs (in the client project), add this after `builder.Services.AddAuthenticationStateDeserialization();`
+
+```
+builder.Services.AddScoped(_ => new HttpClient
+{
+    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+});
+```
+
+1. Add this code to the `Counter.razor` page in the client project at the top, below `@rendermode InteractiveWebAssembly`:
+
+```
+@inject HttpClient Http
+```
+
+1. Add this code to the `Counter.razor` page in the client project just above `@code {`:
+
+```
+<button class="btn btn-primary" @onclick="CallApi">@message</button>
+```
+
+1. Add this code to the `Counter.razor` page in the client project just beneath `private int currentCount = 0;`:
+```
+ private string? message = "Call API";
+
+ private async Task CallApi()
+ {
+     message = await Http.GetStringAsync("api/secureapi");
+ }
+```
+1. Run the server project and navigate to the Counter page in the client project. Click the "Call API" button. You should see the message "You are authorized to access this secure API endpoint." displayed as the button text. This proves that you have called the unsecure API from the client project.
