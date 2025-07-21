@@ -3,6 +3,7 @@ using Blazor9OIDC.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,14 @@ builder.Services.AddAuthentication(options =>
     })
     .AddCookie()
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, _ => { }); // Leave empty, options are configured above
+// For API access (Bearer tokens from WASM)
+var oidcConfig = builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = oidcConfig["Authority"];
+        options.Audience = oidcConfig["Audience"];
+    });
 builder.Services.AddAuthorization();
 
 var app = builder.Build();

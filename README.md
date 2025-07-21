@@ -246,3 +246,32 @@ builder.Services.AddScoped(_ => new HttpClient
  }
 ```
 1. Run the server project and navigate to the Counter page in the client project. Click the "Call API" button. You should see the message "You are authorized to access this secure API endpoint." displayed as the button text. This proves that you have called the unsecure API from the client project.
+
+## Secure the API
+In this step, we'll secure the API so that only authenticated users can access it. We need to secure the API using a JWT scheme.
+
+1. In the server project, in `appSettings.Development.json`, add this beneath `"Authority"`: `"Audience": "api://YOUR_CLIENT_ID",`. Change `YOUR_CLIENT_ID` to match the client ID from when we setup the App Registration.
+
+1. Open a Terminal for the server project and execute this command: `dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer --version 9.0.7` (there may be a newer version available)
+
+1. In the server project, in `Program.cs`, add this using reference to the top: `using Microsoft.AspNetCore.Authentication.JwtBearer;`
+
+1. In the server project, in `Program.cs`, add this above `builder.Services.AddAuthorization();`:
+```
+// For API access (Bearer tokens from WASM)
+var oidcConfig = builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = oidcConfig["Authority"];
+        options.Audience = oidcConfig["Audience"];
+    });
+```
+
+1. In the server project, make these updates to the `SecureApiController.cs` file
+   - Add the following using directive at the top: `using Microsoft.AspNetCore.Authentication.JwtBearer;`
+    - Add the following using directive at the top: `using Microsoft.AspNetCore.Authorization;`
+   - Add the `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]` attribute to the `SecureApiController` class beneath `[ApiController]`. This will secure the entire API.
+
+1. If you run the Server project and execute the following command in a terminal: `curl -i http://localhost:5296/api/secureapi`, you will receive a `HTTP/1.1 401 Unauthorized`. You will also receive a similar error in the browser console if you attempt to press the "Call API" button. This is because the API is now secured and requires authentication.
+
