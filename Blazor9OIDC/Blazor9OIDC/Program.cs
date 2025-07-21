@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,28 +12,34 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
+builder.Services
+    .AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents()
     .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
 
 builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme,
     builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect"));
+var oidcConfig = builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect");
+
 builder.Services.AddAuthentication(options =>
     {
+        // Use cookies as the default scheme (for UI)
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
     })
-    .AddCookie()
-    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, _ => { }); // Leave empty, options are configured above
-// For API access (Bearer tokens from WASM)
-var oidcConfig = builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect");
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddCookie() // For UI login persistence
+    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+    {
+        builder.Configuration.Bind("Authentication:Schemes:OpenIdConnect", options);
+        options.SaveTokens = true; // Optional: lets you inspect access/ID tokens later
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
     {
         options.Authority = oidcConfig["Authority"];
-        options.Audience = oidcConfig["Audience"];
+        options.Audience = oidcConfig["Audience"]; // Custom key in config for reuse
     });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -55,10 +62,10 @@ else
 
 app.UseHttpsRedirection();
 
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
