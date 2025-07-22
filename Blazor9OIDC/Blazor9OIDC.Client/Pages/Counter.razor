@@ -1,7 +1,9 @@
 ﻿@page "/counter"
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @rendermode InteractiveWebAssembly
-@inject IHttpClientFactory ClientFactory
-
+@inject HttpClient Http
+@inject IAccessTokenProvider TokenProvider
 
 <PageTitle>Counter</PageTitle>
 
@@ -38,13 +40,10 @@
 
     private async Task CallApi()
     {
-        var client = ClientFactory.CreateClient("MyApi");
-        var result = await client.GetAsync("");
-        message = result.Content.ToString();
 
         //message = await Http.GetStringAsync("api/secureapi");
 
-        /*var result = await TokenProvider.RequestAccessToken();
+        var result = await TokenProvider.RequestAccessToken();
         if (result.TryGetToken(out var token))
         {
             var request = new HttpRequestMessage(HttpMethod.Get, "api/secureapi");
@@ -60,7 +59,7 @@
         else
         {
             message = "Access token not available.";
-        }*/
+        }
     }
     
     private void IncrementCount()
