@@ -1,4 +1,6 @@
 ﻿@page "/"
+@implements IDisposable
+@inject NavigationManager Navigation
 
 <PageTitle>Home</PageTitle>
 
@@ -17,9 +19,33 @@ Welcome to your new app.
                 <li>@c.Type: @c.Value</li>
             }
         </ul>
-        <a href="/signout">Logout</a>
+        <form action="authentication/logout" method="post">
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+            <button type="submit" class="nav-link">
+                <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+            </button>
+        </form>
     </Authorized>
     <NotAuthorized>
-        <a href="/signin">Login</a>
+        <a href="authentication/login">Login</a>
     </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = Navigation.Uri;
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = Navigation.Uri;
+        StateHasChanged();
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+}

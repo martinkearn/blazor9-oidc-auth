@@ -1,17 +1,16 @@
 ﻿@page "/counter"
-@using System.Net.Http.Headers
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @rendermode InteractiveWebAssembly
 @inject HttpClient Http
-@inject IAccessTokenProvider TokenProvider
 
 <PageTitle>Counter</PageTitle>
 
 <h1>Counter</h1>
 
-<p role="status">Current count: @currentCount</p>
+<p role="status">Current count: @_currentCount</p>
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+<hr/>
 
 <p>Render Mode: @(RendererInfo.IsInteractive ? "Interactive" : "Not Interactive") (@RendererInfo.Name)</p>
 
@@ -25,45 +24,32 @@
                 <li>@c.Type: @c.Value</li>
             }
         </ul>
-        <a href="/signout">Logout</a>
     </Authorized>
     <NotAuthorized>
-        <a href="/signin">Login</a>
+        <p>Not logged in</p>
     </NotAuthorized>
 </AuthorizeView>
 
-<button class="btn btn-primary" @onclick="CallApi">@message</button>
+<button class="btn btn-primary" @onclick="CallMainApi">Call Main Secure Api</button>
+<button class="btn btn-primary" @onclick="CallMinimalApi">Call Minimal Secure Api</button>
+<p>@_message</p>
 
 @code {
-    private int currentCount = 0;
-    private string? message = "Call API";
+    private int _currentCount = 0;
+    private string _message = string.Empty;
 
-    private async Task CallApi()
+    private async Task CallMainApi()
     {
-
-        //message = await Http.GetStringAsync("api/secureapi");
-
-        var result = await TokenProvider.RequestAccessToken();
-        if (result.TryGetToken(out var token))
-        {
-            var request = new HttpRequestMessage(HttpMethod.Get, "api/secureapi");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
-
-            var response = await Http.SendAsync(request);
-            if (response.IsSuccessStatusCode)
-            {
-                message = await response.Content.ReadAsStringAsync();
-                // Handle content
-            }
-        }
-        else
-        {
-            message = "Access token not available.";
-        }
+        _message = await Http.GetStringAsync("api/secureapi");
+    }
+    
+    private async Task CallMinimalApi()
+    {
+        _message = await Http.GetStringAsync("api/minimalsecureapi");
     }
     
     private void IncrementCount()
     {
-        currentCount++;
+        _currentCount++;
     }
 }
