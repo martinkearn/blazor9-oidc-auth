@@ -1,9 +1,8 @@
-using Blazor9OIDC.Client.Pages;
 using Blazor9OIDC.Components;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,35 +10,21 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
+builder.Services
+    .AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents()
     .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
 
-builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme,
-    builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect"));
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    })
-    .AddCookie()
-    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, _ => { }); // Leave empty, options are configured above
-// For API access (Bearer tokens from WASM)
-var oidcConfig = builder.Configuration.GetSection("Authentication:Schemes:OpenIdConnect");
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = oidcConfig["Authority"];
-        options.Audience = oidcConfig["Audience"];
-    });
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -55,27 +40,17 @@ else
 
 app.UseHttpsRedirection();
 
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Blazor9OIDC.Client._Imports).Assembly);
 
-app.MapGet("/signin", async ctx =>
-{
-    await ctx.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, new AuthenticationProperties
-    {
-        RedirectUri = "/"
-    });
-});
-
-app.MapGet("/signout", async ctx =>
-{
-    await ctx.SignOutAsync();
-    ctx.Response.Redirect("/");
-});
+app.MapControllers();
+app.MapGroup("/authentication").MapLoginAndLogout();
+app.MapGet("api/minimalsecureapi", () => "You are authorized to access MinimalSecureApi.").RequireAuthorization();
 
 app.Run();

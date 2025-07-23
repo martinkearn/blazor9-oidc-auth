@@ -416,3 +416,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+Blazor9OIDC/appsettings.Development.json
+Blazor9OIDC/Blazor9OIDC/appSettings.development.json
