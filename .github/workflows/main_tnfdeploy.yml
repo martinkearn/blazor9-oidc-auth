@@ -27,13 +27,13 @@ jobs:
         run: dotnet build ./Blazor9OIDC/Blazor9OIDC/Blazor9OIDC.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish ./Blazor9OIDC/Blazor9OIDC/Blazor9OIDC.csproj -c Release -o ${{env.DOTNET_ROOT}}/Blazor9OIDC
+        run: dotnet publish ./Blazor9OIDC/Blazor9OIDC/Blazor9OIDC.csproj -c Release -o publish
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/Blazor9OIDC
+          path: publish
 
   deploy:
     runs-on: ubuntu-latest
@@ -61,5 +61,5 @@ jobs:
         with:
           app-name: 'tnfdeploy'
           slot-name: 'Production'
-          package: ./Blazor9OIDC
+          package: publish
           
