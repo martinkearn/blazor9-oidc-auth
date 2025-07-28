@@ -61,5 +61,5 @@ jobs:
         with:
           app-name: 'tnfdeploy'
           slot-name: 'Production'
-          package: .
+          package: ./Blazor9OIDC
           
