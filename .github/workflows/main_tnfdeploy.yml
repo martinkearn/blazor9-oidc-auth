@@ -55,11 +55,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0558B2E372094392A976E272EB42E176 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DE9C919B47E241C789E1422D4763C6F0 }}
 
+
+      - name: List files
+        run: ls -R
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'tnfdeploy'
           slot-name: 'Production'
-          package: publish
+          package: ./.net-app
           
